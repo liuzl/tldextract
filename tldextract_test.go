@@ -13,7 +13,8 @@ var (
 )
 
 func init() {
-	tldExtract, err = New(cache, true)
+	//tldExtract, err = New(cache, true)
+	tldExtract, err = NewPro()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/GeertJohan/go.rice"
 )
 
 //used for Result.Flag
@@ -72,6 +74,29 @@ func New(cacheFile string, debug bool) (*TLDExtract, error) {
 	}
 
 	return &TLDExtract{CacheFile: cacheFile, rootNode: rootNode, debug: debug}, nil
+}
+
+// NewProcreates a new *TLDExtract from embed file, it may be shared between goroutines, we usually need a single instance in an application.
+func NewPro() (*TLDExtract, error) {
+	s, err := rice.MustFindBox("files").String("tld.cache")
+	if err != nil {
+		return nil, err
+	}
+	ts := strings.Split(s, "\n")
+	newMap := make(map[string]*Trie)
+	rootNode := &Trie{ExceptRule: false, ValidTld: false, matches: newMap}
+	for _, t := range ts {
+		if t != "" && !strings.HasPrefix(t, "//") {
+			t = strings.TrimSpace(t)
+			exceptionRule := t[0] == '!'
+			if exceptionRule {
+				t = t[1:]
+			}
+			addTldRule(rootNode, strings.Split(t, "."), exceptionRule)
+		}
+	}
+
+	return &TLDExtract{rootNode: rootNode}, nil
 }
 
 // SetNoValidate disables schema check in order to increase performance.
